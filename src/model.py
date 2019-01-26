@@ -1,69 +1,99 @@
 import math
 import numpy as np
 
-TRACK_FILE = "../data/track_1.csv"
 
-ACC = 30 # m/s^2
-BRK = -30 # m/s^2
-TOP = 30 # m/s
-HANDLE = 21
+EPS = 1e-6
 
-radius = np.loadtxt(TRACK_FILE, skiprows=1)
+props = {}
+props['acceleration'] =	[10,	15,		20,		25,		30	]
+props['breaking'] =		[-10,	-15,	-20,	-25,	-30	]
+props['speed'] =		[10,	20,		30,		40,		50	]
+props['gas'] = 			[500,	750,	1000,	1250,	1500]
+props['tire'] =			[500,	750,	1000,	1250,	1500]
+props['handling'] =		[9,		12,		15,		18,		21	]
 
-# Convert to max speeds
+def optimize(config, track):
+	TIRE = props['tire'][config[0]-1]
+	GAS = props['gas'][config[1]-1]
+	HANDLE = props['handling'][config[2]-1] 
+	TOP = props['speed'][config[3]-1]
+	ACC = props['acceleration'][config[4]-1] 
+	BRK = props['breaking'][config[5]-1] 
 
-v_max = np.sqrt(np.abs(radius) * HANDLE / 1e6)
-v_max = np.minimum(v_max, TOP)
-v_max[radius == -1] = TOP
+	#radius = np.loadtxt(TRACK_FILE, skiprows=1)
+	radius = track
 
-v_max[0] = 0
+	# Convert to max speeds
 
-# Optimal travel
+	v_max = np.sqrt(np.abs(radius) * HANDLE / 1e6)
+	v_max = np.minimum(v_max, TOP)
+	v_max[radius == -1] = TOP
 
-speed = np.zeros(v_max.shape)
+	v_max[1:] = np.minimum(v_max[:-1], v_max[1:])
 
-for i in range(1, len(speed)):
-	speed[i] = min(math.sqrt( speed[i-1] ** 2 + 2 * ACC ), v_max[i])
+	v_max[0] = 0
 
-for i in range(len(speed) - 2, -1, -1):
-	speed[i] = min(math.sqrt( speed[i+1] ** 2 - 2 * BRK ), speed[i])
+	# Optimal travel
 
-acc = (speed[1:]**2 - speed[:-1]**2) / 2
-acc = np.append(acc, [0])
+	speed = np.zeros(v_max.shape)
 
-# Costs
+	for i in range(1, len(speed)):
+		speed[i] = min(math.sqrt( speed[i-1] ** 2 + 2 * ACC ), v_max[i])
 
-gas = np.cumsum((0.1*np.maximum(acc, 0)**2))
-tire = np.cumsum((0.1*np.minimum(acc, 0)**2))
+	for i in range(len(speed) - 2, -1, -1):
+		speed[i] = min(math.sqrt( speed[i+1] ** 2 - 2 * BRK ), speed[i])
 
-# Save Instructions
+	acc = (speed[1:]**2 - speed[:-1]**2) / 2
+	acc = np.append(acc, [0])
 
-OUTPUT_FILE = "instructions.csv"
+	# Costs
 
-outarr = np.zeros((len(radius), 2))
-outarr[:,0] = acc
+	gas = np.cumsum((0.1*np.maximum(acc, 0)**2))
+	tire = np.cumsum((0.1*np.minimum(acc, 0)**2))
 
-np.savetxt(OUTPUT_FILE, outarr, delimiter=',')
+	# Scale to save gas money
 
-# Plot
+	c_gas = math.sqrt(GAS / gas[-1])
+	c_tire = math.sqrt(TIRE / tire[-1])
+	c = min(c_gas, c_tire, 1)
+	acc *= c
+	acc *= (1-EPS)
 
-exit()
+	instr = np.zeros((len(acc), 2))
+	instr[:,0] = acc
 
-import matplotlib.pyplot as plt
+	return instr
 
-n = len(radius)
+'''
+	# Save Instructions
 
-plt.subplot(2, 1, 1)
+	OUTPUT_PATH = "soln/"
 
-plt.plot(v_max[:n])
-plt.plot(speed[:n])
+	outarr = np.zeros((len(radius), 2))
+	outarr[:,0] = acc
 
-plt.plot(acc[:n], '.-')
+	np.savetxt(OUTPUT_PATH + '/instructions.csv', outarr, delimiter=',', header='a,pit_stop')
 
-plt.subplot(2, 1, 2)
+	#np.savetxt(OUTPUT_PATH + '/car.csv', ([TIRE, GAS, HANDLE, TOP, ACC, BRK],), delimiter=',',
+	#	header='tire,gas,handling,speed,acceleration,breaking')
 
-plt.plot(gas[:n])
-plt.plot(tire[:n])
+	# Plot
+	import matplotlib.pyplot as plt
 
-plt.show()
+	n = len(radius)
+	n = 55
 
+	plt.subplot(2, 1, 1)
+
+	plt.plot(v_max[:n])
+	plt.plot(speed[:n])
+
+	plt.plot(acc[:n], '.-')
+
+	plt.subplot(2, 1, 2)
+
+	plt.plot(gas[:n])
+	plt.plot(tire[:n])
+
+	plt.show()
+'''
