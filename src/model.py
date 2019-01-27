@@ -94,8 +94,24 @@ def vel(acc):
 def opt_with_pits(config, unconstr_v, n_pits):
 	l = len(unconstr_v)
 
-	pit_locs = np.append(np.arange(0, l, l // (n_pits+1)), [l])[:n_pits+2]
-	pit_locs[-1] = l
+	# compute pit locations
+	acc = accel(unconstr_v)
+	
+	gas_cum = np.cumsum((0.1*np.maximum(acc, 0)**2))
+	tire_cum = np.cumsum((0.1*np.minimum(acc, 0)**2)) 
+
+	timeline = (gas_cum + tire_cum) / (gas_cum[-1] + tire_cum[-1])
+
+	#print(timeline[-100:])
+
+	pit_locs = [ np.argmax( timeline >= i / (n_pits+1) ) for i in range(n_pits + 1) ]
+	pit_locs.append(l) 
+	pit_locs = np.array(pit_locs)
+
+	#print(pit_locs)
+
+	#pit_locs = np.append(np.arange(0, l, l // (n_pits+1)), [l])[:n_pits+2]
+	#pit_locs[-1] = l
 
 	#print(pit_locs)
 	
@@ -124,12 +140,12 @@ def reduce(config, acc, v):
 	import matplotlib.pyplot as plt
 		
 	count = 0
-	gas_arr = []
+	gas_arr, tire_arr = [], []
 
 	shape = v.shape
 	v = np.append(v, [0])
 
-	lr = 0.002
+	lr = 0.001
 
 	while True:
 		gas = np.sum((0.1*np.maximum(acc, 0)**2))
@@ -147,10 +163,10 @@ def reduce(config, acc, v):
 		dt[1:] = np.minimum(-2/(v[:-2] + v[1:-1])**2 - 2/(v[1:-1] + v[2:])**2, -0.1) # dt/dv
 		dt[0] = float('inf')	
 	
-		if (tire > config['tire']):
-			shift_t = (-dtire / dt) * 0.8 + 0.2 * -dgas/dt
+		if (tire - config['tire'] > gas - config['gas']):
+			shift_t = (-dtire / dt) * 0.8
 		else:
-			shift_t = -dgas / dt * 0.8 + 0.2 * -dgas/dt
+			shift_t = -dgas / dt * 0.8
 		#shift_t = -dtire/dt + -dgas/dt	
 	
 		#plt.plot(dgas)
@@ -162,18 +178,22 @@ def reduce(config, acc, v):
 		#assert(False)
 	
 		shift_v = neg(shift_t / dt)
+		shift_v[shift_v > np.min(shift_t) * 0.6] = 0
 		v[:-1] += lr * shift_v
 		v[:-1] = pos(v[:-1])
 
 		np.copyto(acc, accel(v[:-1]))	
 	
-		if count > 10000:
+		if count > 20000:
 			#print(gas)
 			plt.plot(gas_arr)
+			plt.plot(tire_arr)
+			plt.plot([0, len(gas_arr)], [config['gas']] * 2)
 			plt.plot([0, len(gas_arr)], [config['tire']] * 2)
 			plt.show()
 
-		gas_arr.append(tire)
+		gas_arr.append(gas)
+		tire_arr.append(tire)
 		#plt.plot(v)
 		count += 1
 	'''

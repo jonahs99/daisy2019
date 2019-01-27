@@ -12,9 +12,9 @@ tracks_w = [1, 0.25, 0.25, 0.25, 0.5, 0.5, 1, 1]
 SOLUTION_DIR = '../soln/'
 
 configs = car_configs.gen()
-n_configs = len(configs)
-#configs = [[4, 4, 4, 3, 1, 1]]
+configs = [[4, 5, 5, 2, 1, 1]]
 
+n_configs = len(configs)
 print('Evaluating {} car configs...'.format(n_configs))
 
 best_time = float('inf')
