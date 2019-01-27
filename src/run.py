@@ -11,8 +11,14 @@ tracks_w = [1, 0.25, 0.25, 0.25, 0.5, 0.5, 1, 1]
 
 SOLUTION_DIR = '../soln/'
 
+configs = car_configs.gen()
+n_configs = len(configs)
+#configs = [[4, 4, 4, 3, 1, 1]]
+
+print('Evaluating {} car configs...'.format(n_configs))
+
 best_time = float('inf')
-for i, config in enumerate(car_configs.gen()[:]):
+for i, config in enumerate(configs[:]):
 	all_instr = []
 
 	total_time = 0
@@ -26,7 +32,11 @@ for i, config in enumerate(car_configs.gen()[:]):
 		best_config = config
 		best_instr = all_instr
 
-	print(i)
+	print(config, total_time)
+
+	if ((i+1) % 10 == 0):
+		print('{}/{} done.'.format(i+1, n_configs))
+		print('Best: {} with time {}'.format(best_config, best_time))
 
 	#print(config)
 	#print(total_time)

@@ -1,10 +1,10 @@
 def gen():
     possible = []
     prices = {1:0, 2: 2, 3:3, 4:4, 5:6}
-    for i1 in range(1, 6):
-        for i2 in range(1, 6):
-            for i3 in range(1, 6):
-                for i4 in range(1, 6):
+    for i1 in range(3, 6):
+        for i2 in range(3, 6):
+            for i3 in range(2, 6):
+                for i4 in range(2, 6):
                     for i5 in range(1, 6):
                         for i6 in range(1, 6):
                             test = [i1, i2, i3, i4, i5, i6]

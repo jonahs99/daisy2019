@@ -113,6 +113,12 @@ def opt_with_pits(config, unconstr_v, n_pits):
 	
 	return acc, pit_locs[1:-1]
 
+def pos(a):
+	return np.maximum(a, 0)
+
+def neg(a):
+	return np.minimum(a, 0)
+
 def reduce(config, acc, v):	
 
 	import matplotlib.pyplot as plt
@@ -120,6 +126,57 @@ def reduce(config, acc, v):
 	count = 0
 	gas_arr = []
 
+	shape = v.shape
+	v = np.append(v, [0])
+
+	lr = 0.002
+
+	while True:
+		gas = np.sum((0.1*np.maximum(acc, 0)**2))
+		tire = np.sum((0.1*np.minimum(acc, 0)**2)) 
+	
+		if (gas < config['gas'] and tire < config['tire']):
+			break
+
+		v[-1] = v[-2]
+
+		dgas, dtire, dt = np.zeros(shape), np.zeros(shape), np.zeros(shape)
+		dgas[1:] = 0.001 * v[1:-1] * ( -pos(v[2:]**2 - v[1:-1]**2) + pos(v[1:-1]**2 - v[:-2]**2) )
+		dtire[1:] = 0.001 * v[1:-1] * ( -neg(v[2:]**2 - v[1:-1]**2) + neg(v[1:-1]**2 - v[:-2]**2) )	
+
+		dt[1:] = np.minimum(-2/(v[:-2] + v[1:-1])**2 - 2/(v[1:-1] + v[2:])**2, -0.1) # dt/dv
+		dt[0] = float('inf')	
+	
+		if (tire > config['tire']):
+			shift_t = (-dtire / dt) * 0.8 + 0.2 * -dgas/dt
+		else:
+			shift_t = -dgas / dt * 0.8 + 0.2 * -dgas/dt
+		#shift_t = -dtire/dt + -dgas/dt	
+	
+		#plt.plot(dgas)
+		#plt.plot(dtire)
+		##plt.plot(dt)
+		#plt.plot(v)
+		#plt.plot(neg(shift_t/dt))
+		#plt.show()
+		#assert(False)
+	
+		shift_v = neg(shift_t / dt)
+		v[:-1] += lr * shift_v
+		v[:-1] = pos(v[:-1])
+
+		np.copyto(acc, accel(v[:-1]))	
+	
+		if count > 10000:
+			#print(gas)
+			plt.plot(gas_arr)
+			plt.plot([0, len(gas_arr)], [config['tire']] * 2)
+			plt.show()
+
+		gas_arr.append(tire)
+		#plt.plot(v)
+		count += 1
+	'''
 	while(
 		np.sum((0.1*np.maximum(acc, 0)**2)) > config['gas'] or
 		np.sum((0.1*np.minimum(acc, 0)**2)) > config['tire']):
@@ -132,16 +189,17 @@ def reduce(config, acc, v):
 			plt.plot([0, 1000], [config['gas']] * 2)
 			plt.show()
 		
-		c = 0.1
-		v[1:-1] = np.minimum(c * np.sqrt( (v[:-2]**2 + v[2:]**2) / 2 + (1-c) * v[1:-1] ), v[1:-1])
-		v[-1] = min(c * math.sqrt((v[-2]**2 + v[-1]**2) / 2) + (1-c)*v[-1], v[-1]) if v[-1] > 0 else 0
+		#c = v/config['speed']
+		c = np.ones(v.shape)
+		v[1:-1] = np.minimum(c[1:-1] * np.sqrt( (v[:-2]**2 + v[2:]**2) / 2 + (1-c[1:-1]) * v[1:-1] ), v[1:-1])
+		v[-1] = min(c[-1] * math.sqrt((v[-2]**2 + v[-1]**2) / 2) + (1-c[-1])*v[-1], v[-1]) if v[-1] > 0 else 0
 	
 		np.copyto(acc, accel(v))
 
 		#plt.plot(v)
 
 		count += 1
-
+	'''
 	#print(acc, gas)
 	#assert(gas > 0)
 	#assert(tire > 0)
