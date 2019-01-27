@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-EPS = 1e-8
+EPS = 1e-6
 
 PIT_PENALTY = 30
 

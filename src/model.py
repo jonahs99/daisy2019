@@ -4,28 +4,19 @@ import numpy as np
 
 EPS = 1e-6
 
-props = {}
-props['acceleration'] =	[10,	15,		20,		25,		30	]
-props['breaking'] =		[-10,	-15,	-20,	-25,	-30	]
-props['speed'] =		[10,	20,		30,		40,		50	]
-props['gas'] = 			[500,	750,	1000,	1250,	1500]
-props['tire'] =			[500,	750,	1000,	1250,	1500]
-props['handling'] =		[9,		12,		15,		18,		21	]
 
-def optimize(config, track):
-	config = {prop: props[prop][config[i]-1] for i, prop in
+def make_config(config):	
+	props = {}
+	props['acceleration'] =	[10,	15,		20,		25,		30	]
+	props['breaking'] =		[-10,	-15,	-20,	-25,	-30	]
+	props['speed'] =		[10,	20,		30,		40,		50	]
+	props['gas'] = 			[500,	750,	1000,	1250,	1500]
+	props['tire'] =			[500,	750,	1000,	1250,	1500]
+	props['handling'] =		[9,		12,		15,		18,		21	]
+	return {prop: props[prop][config[i]-1] for i, prop in
 		enumerate(['tire', 'gas', 'handling', 'speed', 'acceleration', 'breaking'])}
-	'''
-	TIRE = props['tire'][config[0]-1]
-	GAS = props['gas'][config[1]-1]
-	HANDLE = props['handling'][config[2]-1] 
-	TOP = props['speed'][config[3]-1]
-	ACC = props['acceleration'][config[4]-1] 
-	BRK = props['breaking'][config[5]-1] 
-	'''
 
-	# Convert to max speeds
-
+def max_speed(config, track):	
 	v_max = np.sqrt(np.abs(track) * config['handling'] / 1e6)
 	v_max = np.minimum(v_max, config['speed'])
 	v_max[track == -1] = config['speed']
@@ -33,6 +24,15 @@ def optimize(config, track):
 
 	v_max[0] = 0
 
+	return v_max
+
+def optimize(config, track):
+	config = make_config(config)
+
+	# Convert to max speeds
+
+	v_max = max_speed(config, track)
+	
 	# Prep
 
 	unconstr_v = v_max.copy()
@@ -69,7 +69,7 @@ def optimize(config, track):
 		if len(stats) and time >= stats[-1][1]:
 			break
 
-		stats.append( (instr, time, gas, tire) )
+		stats.append( (instr, time, gas, tire, v) )
 
 	return stats[-1]
 
@@ -83,6 +83,13 @@ def accel(v):
 	a = np.zeros(v.shape)
 	a[:-1] = (v[1:]**2 - v[:-1]**2) / 2
 	return a
+
+def vel(acc):	
+	v = np.zeros(acc.shape)
+	for i, a in enumerate(acc[:-1]):
+		discr = v[i]**2 + 2 * a
+		v[i+1] = math.sqrt(discr) if discr > 0 else 0
+	return v
 
 def opt_with_pits(config, unconstr_v, n_pits):
 	l = len(unconstr_v)
@@ -100,23 +107,48 @@ def opt_with_pits(config, unconstr_v, n_pits):
 	acc = accel(v)
 
 	for start, end in zip(pit_locs[:-1], pit_locs[1:]):
-		reduce(config, acc[start:end])
+		reduce(config, acc[start:end], v[start:end])
 
 	acc[pit_locs[1:-1] - 1] = config['breaking']
 	
 	return acc, pit_locs[1:-1]
 
-def reduce(config, acc):	
-	gas = np.sum((0.1*np.maximum(acc, 0)**2))
-	tire = np.sum((0.1*np.minimum(acc, 0)**2))
+def reduce(config, acc, v):	
+
+	import matplotlib.pyplot as plt
+		
+	count = 0
+	gas_arr = []
+
+	while(
+		np.sum((0.1*np.maximum(acc, 0)**2)) > config['gas'] or
+		np.sum((0.1*np.minimum(acc, 0)**2)) > config['tire']):
+		
+		gas_arr.append(np.sum((0.1*np.maximum(acc, 0)**2)))
+
+		#assert(count < 100)
+		if count > 10000:
+			plt.plot(gas_arr)
+			plt.plot([0, 1000], [config['gas']] * 2)
+			plt.show()
+		
+		c = 0.1
+		v[1:-1] = np.minimum(c * np.sqrt( (v[:-2]**2 + v[2:]**2) / 2 + (1-c) * v[1:-1] ), v[1:-1])
+		v[-1] = min(c * math.sqrt((v[-2]**2 + v[-1]**2) / 2) + (1-c)*v[-1], v[-1]) if v[-1] > 0 else 0
+	
+		np.copyto(acc, accel(v))
+
+		#plt.plot(v)
+
+		count += 1
 
 	#print(acc, gas)
 	#assert(gas > 0)
 	#assert(tire > 0)
 	
-	c = min(math.sqrt(config['gas'] / gas), math.sqrt(config['tire'] / tire), 1)
+#	c = min(math.sqrt(config['gas'] / gas), math.sqrt(config['tire'] / tire), 1)
 
-	acc *= c
+#	acc *= c
 '''
 exit()
 

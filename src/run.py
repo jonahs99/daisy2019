@@ -17,7 +17,7 @@ for i, config in enumerate(car_configs.gen()[:]):
 
 	total_time = 0
 	for track, track_w in zip(tracks, tracks_w):
-		instr, time, gas, tire = model.optimize(config, track)
+		instr, time, gas, tire, v = model.optimize(config, track)
 		total_time += track_w * time
 		all_instr.append(instr)
 
