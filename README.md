@@ -1,8 +1,12 @@
-# Winning solution for the 2019 Daisy Intelligence Hackathon
+# Daisy Intelligence Hackathon 2019
+
+
 
 ## About the code
 
-The original solution submitted for the hackathon is contained in the `orig` folder. A cleaner version using PyTorch written after the hackathon is in the `torch` folder. This is the solution I describe below.
+The original solution submitted for the hackathon is contained in the `orig` folder. Some of the critical pieces were written in the last few hours of the competition so it is rather messy and probably hard to understand. It only needs `numpy` and `matplotlib` (because there is some debugging sprinkled randomly throughout) to run.
+
+A cleaner version using PyTorch written after the hackathon is in the `torch` folder. The output is essentially equivalent but uses the autograd mechanics of PyTorch instead of the manually computed gradients used in the original solution. This is the solution I describe below.
 
 ## Problem
 
