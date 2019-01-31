@@ -21,3 +21,5 @@ So we first form the vector of maximum possible velocities based on the track an
 Now we define a solution as a vector of numbers which scale down the velocity from the maximum allowed at each point. This may use more than the allowed gas or tire, but we can always scale a solution to just use up one or the other. We evaluate the solution by taking these scaled values for the velocities and computing the time. Now doing gradient descent to minimize the time gives a convergent solution.
 
 ![Graph showing solution covergence during gradient descent](img/torch-descent.svg)
+
+(The red line is the maximum possible velocity. The green lines show the convergence of the solution from completely random to the smooth curve at the top.)
