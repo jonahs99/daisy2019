@@ -1,6 +1,6 @@
 # Daisy Intelligence Hackathon 2019
 
-Solution for the optimization problem at the [Daisy Intelligence] hackathon in January 2019. I worked with Leon Yao over the course of 12 hours.
+Solution for the optimization problem at the [Daisy Intelligence](https://www.daisyintelligence.com/) hackathon in January 2019. I worked with Leon Yao over the course of 12 hours.
 
 ## About the code
 
