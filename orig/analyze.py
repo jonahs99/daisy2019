@@ -7,7 +7,7 @@ TRACK_DIR = '../data/'
 track_files = ['track_{}.csv'.format(i) for i in range(1, 9)]
 tracks = [np.loadtxt(TRACK_DIR + track_file, skiprows=1) for track_file in track_files]
 
-SOLUTION_DIR = '../soln/'
+SOLUTION_DIR = '../torch-soln/'
 
 for i in range(8):
 	track = tracks[i]

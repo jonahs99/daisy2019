@@ -27,14 +27,16 @@ def optimize(config, track):
 
 	v_psbl = torch.from_numpy(v_psbl)
 
-	v_scl = torch.ones(v_psbl.size(), dtype=torch.double) * 0.5
+	v_scl = torch.rand(v_psbl.size(), dtype=torch.double)
 	v_scl.requires_grad_(True)
 
-	optimizer = optim.SGD([v_scl], lr=0.0004)
+	lr = 0.0002
+	optimizer = optim.SGD([v_scl], lr=lr)
 
 	times = []
 
-	for i in range(20000):
+	epochs = 20000
+	for i in range(epochs):
 		optimizer.zero_grad()
 	
 		v_scaled = v_psbl * torch.clamp(v_scl, min=0, max=1)
@@ -42,8 +44,6 @@ def optimize(config, track):
 		acc = accel(v_scaled)
 		gas = torch.sum(torch.clamp(acc, min=0)**2 * 0.1)
 		tire = torch.sum(torch.clamp(acc, max=0)**2 * 0.1)
-
-		#print(gas.data, tire.data)
 
 		c = torch.clamp(
 			torch.min(torch.sqrt(config['gas'] / gas), torch.sqrt(config['tire'] / tire)),
@@ -58,14 +58,18 @@ def optimize(config, track):
 
 		times.append(t.item())
 	
-		#print('time {}'.format(t.data))
+		if (i == epochs - 1):
+			plt.plot(v.detach().numpy(), 'b-', linewidth=2.0)	
+		elif (i == 0 or (i+1) % (epochs//10) == 0):
+			plt.plot(v.detach().numpy(), 'g-')
 
-		#if (i % 100 == 0):
-		#	plt.plot(v_scaled.detach().numpy() * c.detach().numpy())
+	plt.plot(v_psbl.detach().numpy(), 'r--')
+	plt.xlabel('X')
+	plt.ylabel('Velocity')
+	plt.show()
 
-	plt.show()
-	plt.plot(times)
-	plt.show()
+	#plt.plot(times)
+	#plt.show()
 
 	instr = accel(v.detach()).numpy()
 	
